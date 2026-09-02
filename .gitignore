@@ -1,10 +1,28 @@
 # Python-generated files
 __pycache__/
 *.py[oc]
+*$py.class
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
+.eggs/
+
+# Python tooling and test artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
 # Virtual environments
-.venv
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter/IPython
+.ipynb_checkpoints/
+.ipython/
+profile_default/
