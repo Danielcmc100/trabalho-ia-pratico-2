@@ -1,0 +1,685 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "RzpBGKJsIWGG"
+      },
+      "source": [
+        "# Trabalho prático I — RNA e Lógica Fuzzy\n",
+        "\n",
+        "Este notebook contém **somente a preparação dos dados**. Ao final, estarão disponíveis:\n"
+      ],
+      "id": "RzpBGKJsIWGG"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "rdDLcgHsIWGK"
+      },
+      "source": [
+        "## 1. Bibliotecas"
+      ],
+      "id": "rdDLcgHsIWGK"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 14,
+      "metadata": {
+        "id": "cxcIiJv8IWGL"
+      },
+      "outputs": [],
+      "source": [
+        "from pathlib import Path\n",
+        "\n",
+        "import numpy as np\n",
+        "import pandas as pd\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "from sklearn.compose import ColumnTransformer\n",
+        "from sklearn.impute import SimpleImputer\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.pipeline import Pipeline\n",
+        "from sklearn.preprocessing import LabelEncoder, StandardScaler\n",
+        "\n",
+        "SEMENTE = 42\n",
+        "np.random.seed(SEMENTE)"
+      ],
+      "id": "cxcIiJv8IWGL"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "psglniQEIWGN"
+      },
+      "source": [
+        "## 2. Carregamento da base\n",
+        "\n",
+        "Coloque o arquivo `dados_sinteticos_neuro_fuzzy_10000.xlsx` na mesma pasta do notebook."
+      ],
+      "id": "psglniQEIWGN"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 55
+        },
+        "id": "QbfhZGfHIWGN",
+        "outputId": "a03f3073-b9ff-478f-e1be-7e9c80e11b2e"
+      },
+      "outputs": [
+        {
+          "metadata": {
+            "tags": null
+          },
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "Selecione a planilha fornecida pela professora.\n"
+          ]
+        },
+        {
+          "data": {
+            "text/html": [
+              "\n",
+              "     <input type=\"file\" id=\"files-b20036f4-6833-4337-9194-8da7f3318a04\" name=\"files[]\" multiple disabled\n",
+              "        style=\"border:none\" />\n",
+              "     <output id=\"result-b20036f4-6833-4337-9194-8da7f3318a04\">\n",
+              "      Upload widget is only available when the cell has been executed in the\n",
+              "      current browser session. Please rerun this cell to enable.\n",
+              "      </output>\n",
+              "      <script>// Copyright 2017 Google LLC\n",
+              "//\n",
+              "// Licensed under the Apache License, Version 2.0 (the \"License\");\n",
+              "// you may not use this file except in compliance with the License.\n",
+              "// You may obtain a copy of the License at\n",
+              "//\n",
+              "//      http://www.apache.org/licenses/LICENSE-2.0\n",
+              "//\n",
+              "// Unless required by applicable law or agreed to in writing, software\n",
+              "// distributed under the License is distributed on an \"AS IS\" BASIS,\n",
+              "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n",
+              "// See the License for the specific language governing permissions and\n",
+              "// limitations under the License.\n",
+              "\n",
+              "/**\n",
+              " * @fileoverview Helpers for google.colab Python module.\n",
+              " */\n",
+              "(function(scope) {\n",
+              "function span(text, styleAttributes = {}) {\n",
+              "  const element = document.createElement('span');\n",
+              "  element.textContent = text;\n",
+              "  for (const key of Object.keys(styleAttributes)) {\n",
+              "    element.style[key] = styleAttributes[key];\n",
+              "  }\n",
+              "  return element;\n",
+              "}\n",
+              "\n",
+              "// Max number of bytes which will be uploaded at a time.\n",
+              "const MAX_PAYLOAD_SIZE = 100 * 1024;\n",
+              "\n",
+              "function _uploadFiles(inputId, outputId) {\n",
+              "  const steps = uploadFilesStep(inputId, outputId);\n",
+              "  const outputElement = document.getElementById(outputId);\n",
+              "  // Cache steps on the outputElement to make it available for the next call\n",
+              "  // to uploadFilesContinue from Python.\n",
+              "  outputElement.steps = steps;\n",
+              "\n",
+              "  return _uploadFilesContinue(outputId);\n",
+              "}\n",
+              "\n",
+              "// This is roughly an async generator (not supported in the browser yet),\n",
+              "// where there are multiple asynchronous steps and the Python side is going\n",
+              "// to poll for completion of each step.\n",
+              "// This uses a Promise to block the python side on completion of each step,\n",
+              "// then passes the result of the previous step as the input to the next step.\n",
+              "function _uploadFilesContinue(outputId) {\n",
+              "  const outputElement = document.getElementById(outputId);\n",
+              "  const steps = outputElement.steps;\n",
+              "\n",
+              "  const next = steps.next(outputElement.lastPromiseValue);\n",
+              "  return Promise.resolve(next.value.promise).then((value) => {\n",
+              "    // Cache the last promise value to make it available to the next\n",
+              "    // step of the generator.\n",
+              "    outputElement.lastPromiseValue = value;\n",
+              "    return next.value.response;\n",
+              "  });\n",
+              "}\n",
+              "\n",
+              "/**\n",
+              " * Generator function which is called between each async step of the upload\n",
+              " * process.\n",
+              " * @param {string} inputId Element ID of the input file picker element.\n",
+              " * @param {string} outputId Element ID of the output display.\n",
+              " * @return {!Iterable<!Object>} Iterable of next steps.\n",
+              " */\n",
+              "function* uploadFilesStep(inputId, outputId) {\n",
+              "  const inputElement = document.getElementById(inputId);\n",
+              "  inputElement.disabled = false;\n",
+              "\n",
+              "  const outputElement = document.getElementById(outputId);\n",
+              "  outputElement.innerHTML = '';\n",
+              "\n",
+              "  const pickedPromise = new Promise((resolve) => {\n",
+              "    inputElement.addEventListener('change', (e) => {\n",
+              "      resolve(e.target.files);\n",
+              "    });\n",
+              "  });\n",
+              "\n",
+              "  const cancel = document.createElement('button');\n",
+              "  inputElement.parentElement.appendChild(cancel);\n",
+              "  cancel.textContent = 'Cancel upload';\n",
+              "  const cancelPromise = new Promise((resolve) => {\n",
+              "    cancel.onclick = () => {\n",
+              "      resolve(null);\n",
+              "    };\n",
+              "  });\n",
+              "\n",
+              "  // Wait for the user to pick the files.\n",
+              "  const files = yield {\n",
+              "    promise: Promise.race([pickedPromise, cancelPromise]),\n",
+              "    response: {\n",
+              "      action: 'starting',\n",
+              "    }\n",
+              "  };\n",
+              "\n",
+              "  cancel.remove();\n",
+              "\n",
+              "  // Disable the input element since further picks are not allowed.\n",
+              "  inputElement.disabled = true;\n",
+              "\n",
+              "  if (!files) {\n",
+              "    return {\n",
+              "      response: {\n",
+              "        action: 'complete',\n",
+              "      }\n",
+              "    };\n",
+              "  }\n",
+              "\n",
+              "  for (const file of files) {\n",
+              "    const li = document.createElement('li');\n",
+              "    li.append(span(file.name, {fontWeight: 'bold'}));\n",
+              "    li.append(span(\n",
+              "        `(${file.type || 'n/a'}) - ${file.size} bytes, ` +\n",
+              "        `last modified: ${\n",
+              "            file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() :\n",
+              "                                    'n/a'} - `));\n",
+              "    const percent = span('0% done');\n",
+              "    li.appendChild(percent);\n",
+              "\n",
+              "    outputElement.appendChild(li);\n",
+              "\n",
+              "    const fileDataPromise = new Promise((resolve) => {\n",
+              "      const reader = new FileReader();\n",
+              "      reader.onload = (e) => {\n",
+              "        resolve(e.target.result);\n",
+              "      };\n",
+              "      reader.readAsArrayBuffer(file);\n",
+              "    });\n",
+              "    // Wait for the data to be ready.\n",
+              "    let fileData = yield {\n",
+              "      promise: fileDataPromise,\n",
+              "      response: {\n",
+              "        action: 'continue',\n",
+              "      }\n",
+              "    };\n",
+              "\n",
+              "    // Use a chunked sending to avoid message size limits. See b/62115660.\n",
+              "    let position = 0;\n",
+              "    do {\n",
+              "      const length = Math.min(fileData.byteLength - position, MAX_PAYLOAD_SIZE);\n",
+              "      const chunk = new Uint8Array(fileData, position, length);\n",
+              "      position += length;\n",
+              "\n",
+              "      const base64 = btoa(String.fromCharCode.apply(null, chunk));\n",
+              "      yield {\n",
+              "        response: {\n",
+              "          action: 'append',\n",
+              "          file: file.name,\n",
+              "          data: base64,\n",
+              "        },\n",
+              "      };\n",
+              "\n",
+              "      let percentDone = fileData.byteLength === 0 ?\n",
+              "          100 :\n",
+              "          Math.round((position / fileData.byteLength) * 100);\n",
+              "      percent.textContent = `${percentDone}% done`;\n",
+              "\n",
+              "    } while (position < fileData.byteLength);\n",
+              "  }\n",
+              "\n",
+              "  // All done.\n",
+              "  yield {\n",
+              "    response: {\n",
+              "      action: 'complete',\n",
+              "    }\n",
+              "  };\n",
+              "}\n",
+              "\n",
+              "scope.google = scope.google || {};\n",
+              "scope.google.colab = scope.google.colab || {};\n",
+              "scope.google.colab._files = {\n",
+              "  _uploadFiles,\n",
+              "  _uploadFilesContinue,\n",
+              "};\n",
+              "})(self);\n",
+              "</script> "
+            ],
+            "text/plain": [
+              "<IPython.core.display.HTML object>"
+            ]
+          },
+          "metadata": {},
+          "output_type": "display_data"
+        }
+      ],
+      "source": [
+        "NOME_ARQUIVO = \"dados_sinteticos_neuro_fuzzy_10000(2).xlsx\"\n",
+        "\n",
+        "candidatos = [\n",
+        "    Path(NOME_ARQUIVO),\n",
+        "    Path(\"upload\") / NOME_ARQUIVO,\n",
+        "]\n",
+        "caminho = next((p for p in candidatos if p.exists()), None)\n",
+        "\n",
+        "if caminho is None:\n",
+        "    try:\n",
+        "        from google.colab import files\n",
+        "        print(\"Selecione a planilha fornecida pela professora.\")\n",
+        "        arquivos = files.upload()\n",
+        "        caminho = Path(next(iter(arquivos)))\n",
+        "    except ImportError as erro:\n",
+        "        raise FileNotFoundError(\n",
+        "            f\"Arquivo não encontrado. Coloque '{NOME_ARQUIVO}' na mesma pasta do notebook.\"\n",
+        "        ) from erro\n",
+        "\n",
+        "dados = pd.read_excel(caminho, sheet_name=\"Dados\")\n",
+        "print(f\"Arquivo carregado: {caminho}\")\n",
+        "print(f\"Dimensões da base: {dados.shape[0]} linhas e {dados.shape[1]} colunas\")\n",
+        "dados.head()"
+      ],
+      "id": "QbfhZGfHIWGN"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "UiXU40DEIWGO"
+      },
+      "source": [
+        "## 3. Conferência inicial\n",
+        "\n",
+        "As células abaixo permitem verificar os tipos das colunas, os valores ausentes e a distribuição das classes."
+      ],
+      "id": "UiXU40DEIWGO"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "kkU3juJDIWGO"
+      },
+      "outputs": [],
+      "source": [
+        "resumo_colunas = pd.DataFrame({\n",
+        "    \"tipo\": dados.dtypes.astype(str),\n",
+        "    \"ausentes\": dados.isna().sum(),\n",
+        "    \"valores_unicos\": dados.nunique(dropna=True),\n",
+        "})\n",
+        "resumo_colunas"
+      ],
+      "id": "kkU3juJDIWGO"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "PfqkZLaKIWGP"
+      },
+      "outputs": [],
+      "source": [
+        "distribuicao_classes = dados[\"classe\"].value_counts().sort_index()\n",
+        "display(distribuicao_classes.to_frame(\"quantidade\"))\n",
+        "\n",
+        "distribuicao_classes.plot(\n",
+        "    kind=\"bar\", color=\"#2F6B5F\", edgecolor=\"black\", figsize=(7, 4)\n",
+        ")\n",
+        "plt.title(\"Distribuição das classes\")\n",
+        "plt.xlabel(\"Classe\")\n",
+        "plt.ylabel(\"Quantidade de registros\")\n",
+        "plt.xticks(rotation=0)\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "PfqkZLaKIWGP"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "YkLRps8WIWGP"
+      },
+      "source": [
+        "## 4. Separação das variáveis\n",
+        "\n",
+        "Serão utilizadas como entradas as seis medições e os três alarmes descritos no trabalho. As colunas `id`, `cenario` e `sensor_ausente` serão preservadas apenas para identificar e analisar posteriormente os resultados; `classe` será a variável-alvo. Assim, informações sobre a forma como o exemplo foi produzido não entram no modelo."
+      ],
+      "id": "YkLRps8WIWGP"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "_eD4ia5VIWGP"
+      },
+      "outputs": [],
+      "source": [
+        "COLUNAS_NUMERICAS = [\n",
+        "    \"temperatura_c\",\n",
+        "    \"latencia_ms\",\n",
+        "    \"perda_pacotes_pct\",\n",
+        "    \"tensao_v\",\n",
+        "    \"rotacao_rpm\",\n",
+        "    \"reinicializacoes_h\",\n",
+        "]\n",
+        "\n",
+        "COLUNAS_BINARIAS = [\n",
+        "    \"alarme_rede\",\n",
+        "    \"alarme_temperatura\",\n",
+        "    \"alarme_tensao\",\n",
+        "]\n",
+        "\n",
+        "COLUNAS_ENTRADA = COLUNAS_NUMERICAS + COLUNAS_BINARIAS\n",
+        "COLUNAS_AUXILIARES = [\"id\", \"cenario\", \"sensor_ausente\"]\n",
+        "\n",
+        "X = dados[COLUNAS_ENTRADA].copy()\n",
+        "y = dados[\"classe\"].copy()\n",
+        "auxiliares = dados[COLUNAS_AUXILIARES].copy()\n",
+        "\n",
+        "print(\"Variáveis de entrada:\", COLUNAS_ENTRADA)\n",
+        "print(\"Formato de X:\", X.shape)\n",
+        "print(\"Formato de y:\", y.shape)"
+      ],
+      "id": "_eD4ia5VIWGP"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "K_h9IjZfIWGQ"
+      },
+      "source": [
+        "## 5. Divisão em treino e teste\n",
+        "\n",
+        "A divisão abaixo reserva 80% dos registros para treino e 20% para teste. O parâmetro `stratify=y` mantém a proporção das quatro classes nos dois conjuntos. Os índices também são divididos para que `id`, `cenario` e `sensor_ausente` possam ser usados na análise dos erros sem participar da aprendizagem."
+      ],
+      "id": "K_h9IjZfIWGQ"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "l5ThdAgzIWGQ"
+      },
+      "outputs": [],
+      "source": [
+        "indices = np.arange(len(dados))\n",
+        "\n",
+        "idx_treino, idx_teste = train_test_split(\n",
+        "    indices,\n",
+        "    test_size=0.20,\n",
+        "    random_state=SEMENTE,\n",
+        "    stratify=y,\n",
+        ")\n",
+        "\n",
+        "X_treino = X.iloc[idx_treino].copy()\n",
+        "X_teste = X.iloc[idx_teste].copy()\n",
+        "y_treino = y.iloc[idx_treino].copy()\n",
+        "y_teste = y.iloc[idx_teste].copy()\n",
+        "aux_treino = auxiliares.iloc[idx_treino].copy()\n",
+        "aux_teste = auxiliares.iloc[idx_teste].copy()\n",
+        "\n",
+        "print(\"Treino:\", X_treino.shape, \"| Teste:\", X_teste.shape)\n",
+        "print(\"\\nProporção das classes no treino:\")\n",
+        "display(y_treino.value_counts(normalize=True).sort_index().to_frame(\"proporção\"))\n",
+        "print(\"Proporção das classes no teste:\")\n",
+        "display(y_teste.value_counts(normalize=True).sort_index().to_frame(\"proporção\"))"
+      ],
+      "id": "l5ThdAgzIWGQ"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "t-pwXrE0IWGQ"
+      },
+      "source": [
+        "## 6. Preparação para a RNA\n",
+        "\n",
+        "Nos dados numéricos, os valores ausentes serão substituídos pela mediana calculada **somente no treino**. Em seguida, essas variáveis serão padronizadas. As colunas binárias já estão na escala 0–1 e serão apenas copiadas. O mesmo transformador ajustado no treino será aplicado ao teste, evitando vazamento de dados."
+      ],
+      "id": "t-pwXrE0IWGQ"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "MrXEm9_cIWGQ"
+      },
+      "outputs": [],
+      "source": [
+        "pipeline_numerico = Pipeline(steps=[\n",
+        "    (\"imputacao\", SimpleImputer(strategy=\"median\")),\n",
+        "    (\"padronizacao\", StandardScaler()),\n",
+        "])\n",
+        "\n",
+        "preparador_rna = ColumnTransformer(\n",
+        "    transformers=[\n",
+        "        (\"numericas\", pipeline_numerico, COLUNAS_NUMERICAS),\n",
+        "        (\"binarias\", \"passthrough\", COLUNAS_BINARIAS),\n",
+        "    ],\n",
+        "    remainder=\"drop\",\n",
+        "    verbose_feature_names_out=False,\n",
+        ")\n",
+        "\n",
+        "X_treino_rna = preparador_rna.fit_transform(X_treino)\n",
+        "X_teste_rna = preparador_rna.transform(X_teste)\n",
+        "\n",
+        "codificador_classes = LabelEncoder()\n",
+        "y_treino_cod = codificador_classes.fit_transform(y_treino)\n",
+        "y_teste_cod = codificador_classes.transform(y_teste)\n",
+        "\n",
+        "nomes_entradas_rna = preparador_rna.get_feature_names_out().tolist()\n",
+        "nomes_classes = codificador_classes.classes_.tolist()\n",
+        "\n",
+        "print(\"Formato dos dados da RNA:\")\n",
+        "print(\"X_treino_rna:\", X_treino_rna.shape)\n",
+        "print(\"X_teste_rna: \", X_teste_rna.shape)\n",
+        "print(\"Ordem das classes:\", dict(enumerate(nomes_classes)))"
+      ],
+      "id": "MrXEm9_cIWGQ"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "pwmsjw_pIWGR"
+      },
+      "outputs": [],
+      "source": [
+        "# Verificações simples da preparação\n",
+        "assert X_treino_rna.shape == (8000, 9)\n",
+        "assert X_teste_rna.shape == (2000, 9)\n",
+        "assert not np.isnan(X_treino_rna).any()\n",
+        "assert not np.isnan(X_teste_rna).any()\n",
+        "assert len(nomes_classes) == 4\n",
+        "print(\"Sem valores ausentes.\")"
+      ],
+      "id": "pwmsjw_pIWGR"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "dfxYds_4IWGR"
+      },
+      "source": [
+        "### A partir daqui, a equipe deverá construir a RNA\n",
+        "\n",
+        "Utilize `X_treino_rna` e `y_treino_cod` para o treinamento. Use `X_teste_rna` e `y_teste_cod` apenas na avaliação final. A arquitetura solicitada possui duas camadas ocultas, com 32 e 16 neurônios, ativação ReLU e quatro saídas com softmax."
+      ],
+      "id": "dfxYds_4IWGR"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "jMoxySa2IWGR"
+      },
+      "outputs": [],
+      "source": [
+        "# PARTE DOS ALUNOS: construir, treinar e avaliar a RNA aqui.\n",
+        "# Apresentar acurácia, precisão, revocação, macro-F1 e matriz de confusão.\n",
+        "\n",
+        "# Seu código:"
+      ],
+      "id": "jMoxySa2IWGR"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "RN9Mhqw_IWGR"
+      },
+      "source": [
+        "## 7. Preparação para o sistema fuzzy\n",
+        "\n",
+        "Para o sistema fuzzy, as variáveis devem continuar em suas unidades originais, pois os limites das funções de pertinência serão definidos em °C, ms, %, V, rpm e quantidade de reinicializações. Por isso, será feita somente a imputação pela mediana do treino, sem padronização."
+      ],
+      "id": "RN9Mhqw_IWGR"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "Ne7JuutQIWGR"
+      },
+      "outputs": [],
+      "source": [
+        "imputador_fuzzy = SimpleImputer(strategy=\"median\")\n",
+        "\n",
+        "X_treino_fuzzy = X_treino.copy()\n",
+        "X_teste_fuzzy = X_teste.copy()\n",
+        "\n",
+        "X_treino_fuzzy[COLUNAS_NUMERICAS] = imputador_fuzzy.fit_transform(\n",
+        "    X_treino[COLUNAS_NUMERICAS]\n",
+        ")\n",
+        "X_teste_fuzzy[COLUNAS_NUMERICAS] = imputador_fuzzy.transform(\n",
+        "    X_teste[COLUNAS_NUMERICAS]\n",
+        ")\n",
+        "\n",
+        "assert not X_treino_fuzzy.isna().any().any()\n",
+        "assert not X_teste_fuzzy.isna().any().any()\n",
+        "\n",
+        "print(\"Dados fuzzy preparados nas unidades originais.\")\n",
+        "X_treino_fuzzy.head()"
+      ],
+      "id": "Ne7JuutQIWGR"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "M-P1LzDTIWGS"
+      },
+      "source": [
+        "### A partir daqui, a equipe deverá construir o sistema fuzzy\n",
+        "\n",
+        "A equipe deverá:\n",
+        "\n",
+        "1. definir e representar graficamente as funções de pertinência;\n",
+        "2. construir os módulos de rede, refrigeração e alimentação;\n",
+        "3. elaborar pelo menos quatro regras para cada módulo;"
+      ],
+      "id": "M-P1LzDTIWGS"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "_-jjhdNOIWGS"
+      },
+      "outputs": [],
+      "source": [
+        "# PARTE DOS ALUNOS: definir as funções de pertinência e exibir seus gráficos.\n",
+        "\n",
+        "# Seu código:"
+      ],
+      "id": "_-jjhdNOIWGS"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "RhqIpG4WIWGS"
+      },
+      "outputs": [],
+      "source": [
+        "# PARTE DOS ALUNOS: criar as regras dos três módulos fuzzy.\n",
+        "\n",
+        "# Seu código:"
+      ],
+      "id": "RhqIpG4WIWGS"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "UUNtrC8iIWGS"
+      },
+      "outputs": [],
+      "source": [
+        "# PARTE DOS ALUNOS: demonstrar fuzzificação, inferência e defuzzificação.\n",
+        "\n",
+        "# Seu código:"
+      ],
+      "id": "UUNtrC8iIWGS"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "zDhCTtDgIWGS"
+      },
+      "source": [
+        "## 8. Objetos disponíveis para o trabalho\n",
+        "\n",
+        "| Objeto | Uso |\n",
+        "|---|---|\n",
+        "| `X_treino_rna` | Entradas padronizadas para treinar a RNA |\n",
+        "| `X_teste_rna` | Entradas padronizadas para testar a RNA |\n",
+        "| `y_treino_cod` | Classes numéricas do treino |\n",
+        "| `y_teste_cod` | Classes numéricas do teste |\n",
+        "| `nomes_classes` | Ordem usada na codificação das classes |\n",
+        "| `X_treino_fuzzy` | Entradas de treino nas unidades originais |\n",
+        "| `X_teste_fuzzy` | Entradas de teste nas unidades originais |\n",
+        "| `y_treino`, `y_teste` | Classes em texto |\n",
+        "| `aux_treino`, `aux_teste` | ID, cenário e indicação de sensor ausente para análises |\n",
+        "| `preparador_rna` | Transformador ajustado no treino para preparar novos dados |\n",
+        "| `imputador_fuzzy` | Imputador ajustado no treino para o sistema fuzzy |"
+      ],
+      "id": "zDhCTtDgIWGS"
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python",
+      "version": "3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
